@@ -1,0 +1,118 @@
+<?php
+
+define('RBKC_DA_EVENTS_VOCAB_PREFIX', 'events_');
+define('RBKC_DA_EVENTS_RETURN_MACHINE_NAME', true);
+
+/**
+ * Implements hook_menu().
+ */
+function rbkc_da_events_menu() {
+  $items = array();
+  
+  $items['events'] = array(
+    'title' => 'Events',
+    'description' => 'Events',
+    'page callback' => 'rbkc_da_events_categories',
+    'access arguments' => array('access content'),
+    'type' => MENU_CALLBACK,
+  );
+  
+  return $items;
+}
+
+/**
+ * Display the evens categories for current domain
+ * @return string
+ */
+function rbkc_da_events_categories() {
+  $domain_name = rbkc_da_events_get_current_domainname();
+  if (!$domain_name) {
+    drupal_not_found();
+    return null;
+  }
+  return views_embed_view('da_events_page', 'default', RBKC_DA_EVENTS_VOCAB_PREFIX.$domain_name);
+}
+
+
+/**
+ * Implements hook_form_BASE_FORM_ID_alter().
+ */
+function rbkc_da_events_form_event_node_form_alter(&$form, &$form_state) {
+
+  $domain_vid = rbkc_da_events_get_domain_vid();
+  
+  $terms = taxonomy_get_tree($domain_vid);
+
+  if ($terms) {
+    $options = array();
+    foreach ($terms as $term) {
+      $options[$term->tid] = $term->name;
+    }
+
+    $form['field_event_category'][LANGUAGE_NONE]['#options'] = $options;
+  }
+}
+
+/**
+ * Get the events vocab for current domain
+ * @param bool $machine_name Set to TRUE to return machine name instead of vid
+ * @return int | string
+ */
+function rbkc_da_events_get_domain_vid($machine_name = false) {
+  $domain_name = rbkc_da_events_get_current_domainname();
+  if (!$domain_name) {
+    return 0;
+  }
+  
+  $domain_vocab_name = RBKC_DA_EVENTS_VOCAB_PREFIX . $domain_name;
+  $vocab = taxonomy_vocabulary_machine_name_load($domain_vocab_name);
+  
+  if (!$vocab) {
+    return 0;
+  }
+  
+  return $machine_name? $vocab->machine_name : $vocab->vid;
+}
+
+/**
+ * Returns the domain name of the current domain
+ * @return string
+ */
+function rbkc_da_events_get_current_domainname() {
+  $domain = domain_get_domain();
+  list($domain_name, $microsite_path) = explode('/', $domain['subdomain']);
+  return $microsite_path;
+}
+
+/**
+ * Implements hook_views_query_alter().
+ */
+function rbkc_da_events_views_query_alter(&$view, &$query) {
+  if ($view->name == 'event_listings') {
+    $vocab_name = rbkc_da_events_get_domain_vid(RBKC_DA_EVENTS_RETURN_MACHINE_NAME);
+    $term_name = $view->args[0];
+  
+    $tid = rbkc_da_events_get_tid_by_name($term_name, $vocab_name);
+    
+    if ($tid) {
+      $query->where[0]['conditions'][0]['value'] = $tid;
+    }
+  }
+}
+
+/**
+ * Return the term ID for a given term name and vocab name
+ * @param string $term_name The term name
+ * @param string $vocab_name Machine name for vocab
+ * @return bool
+ */
+function rbkc_da_events_get_tid_by_name($term_name, $vocab_name) {
+  $terms = taxonomy_get_term_by_name($term_name, $vocab_name);
+  
+  if (empty($terms)) {
+    return false;
+  }
+  
+  $term = array_shift(array_values($terms));
+  return $term->tid;
+}

@@ -1,0 +1,7 @@
+name = RBKC Domain Access Events
+description = Allow event type and events to be Domain Access compatible
+core = 7.x
+package = RBKC
+version = 7.1
+
+dependencies[] = domain

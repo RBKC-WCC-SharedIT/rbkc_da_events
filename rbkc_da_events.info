@@ -5,3 +5,5 @@ package = RBKC
 version = 7.1
 
 dependencies[] = domain
+dependencies[] = rbkc_events_domain_access
+

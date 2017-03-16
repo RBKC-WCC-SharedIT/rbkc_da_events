@@ -1,0 +1,7 @@
+<?php
+/**
+ * @file
+ * Code for the RBKC Events Domain Access feature.
+ */
+
+include_once 'feature_events_domain_access.features.inc';

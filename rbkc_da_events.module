@@ -35,21 +35,24 @@ function rbkc_da_events_categories() {
 
 
 /**
- * Implements hook_form_BASE_FORM_ID_alter().
+ * Implements hook_form_alter().
  */
-function rbkc_da_events_form_event_node_form_alter(&$form, &$form_state) {
-
-  $domain_vid = rbkc_da_events_get_domain_vid();
+function rbkc_da_events_form_alter(&$form, &$form_state, $form_id) {
   
-  $terms = taxonomy_get_tree($domain_vid);
-
-  if ($terms) {
-    $options = array();
-    foreach ($terms as $term) {
-      $options[$term->tid] = $term->name;
+  if (isset($form['field_event_category'])) {
+    $domain_vid = rbkc_da_events_get_domain_vid();
+    
+    $terms = taxonomy_get_tree($domain_vid);
+    
+    if ($terms) {
+      $options = array();
+      foreach ($terms as $term) {
+        $options[$term->tid] = $term->name;
+      }
+      
+      $form['field_event_category'][LANGUAGE_NONE]['#options'] = $options;
     }
-
-    $form['field_event_category'][LANGUAGE_NONE]['#options'] = $options;
+    
   }
 }
 
